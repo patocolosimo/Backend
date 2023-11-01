@@ -60,10 +60,7 @@ class ProductManager {
   }
 }
 
-const productos = new ProductManager('productos.json');
-
-productos.addProduct("titulo1", "descripcion1", 1000, "imagen1", "123456", 5);
-productos.addProduct("titulo2", "descripcion2", 1000, "imagen1", "123456", 5);
+const productos = new ProductManager('products.json');
 
 console.log(productos.getProducts());
 const product = productos.getProductById(1);

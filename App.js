@@ -4,7 +4,7 @@ const ProductManager = require('./ProductManager');
 const app = express();
 const port = 3000; 
 
-const productos = new ProductManager('productos.json');
+const productos = new ProductManager('products.json');
 
 app.get('/products', (req, res) => {
   const { limit } = req.query;
