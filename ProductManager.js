@@ -65,3 +65,5 @@ const productos = new ProductManager('products.json');
 console.log(productos.getProducts());
 const product = productos.getProductById(1);
 console.log("Producto encontrado por ID:", product);
+
+module.exports = ProductManager;
