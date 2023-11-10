@@ -1,12 +1,19 @@
 const express = require('express');
+const http = require('http');
+const exphbs = require('express-handlebars'); 
+const socketIo = require('socket.io');
 const ProductManager = require('./ProductManager');
 const CartManager = require('./CartManager');
+
 const app = express();
-const port = 8080;
+const server = http.createServer(app);
+const io = socketIo(server);
 
 const productos = new ProductManager('products.json');
 const carritos = new CartManager('cart.json');
 
+app.engine('handlebars', exphbs.create({}).engine);
+app.set('view engine', 'handlebars');
 app.use(express.json());
 
 app.get('/api/products', (req, res) => {
@@ -37,33 +44,43 @@ app.get('/api/products/:pid', (req, res) => {
   }
 });
 
+// Configurar ruta para la vista tradicional
+app.get('/home', (req, res) => {
+  const allProducts = productos.getProducts();
+  console.log('Productos:', allProducts);
+  res.render('home', { products: allProducts });
+});
+
+// Configurar ruta para la vista en tiempo real con websockets
+app.get('/realtimeproducts', (req, res) => {
+  const allProducts = productos.getProducts();
+  res.render('realTimeProducts', { products: allProducts });
+});
+
+io.on('connection', (socket) => {
+  console.log('Nuevo cliente conectado');
+});
+
 app.post('/api/carts', (req, res) => {
   const cartId = carritos.createCart();
+  io.emit('updateCarts', carritos.getCarts()); // Emitir actualización a todos los clientes
   res.json({ cartId });
 });
 
-app.get('/api/carts/:cid', (req, res) => {
-  const cartId = req.params.cid;
-  const cart = carritos.getCart(cartId);
-  if (cart) {
-    res.json(cart);
-  } else {
-    res.status(404).json({ error: 'Carrito no encontrado' });
-  }
+// Configurar websockets para manejar eventos específicos
+io.on('connection', (socket) => {
+  console.log('Nuevo cliente conectado');
+
+  // Manejar el evento de agregar producto al carrito
+  socket.on('addToCart', ({ cartId, productId, quantity }) => {
+    const success = carritos.addProductToCart(cartId, productId, quantity);
+    if (success) {
+      io.emit('updateCarts', carritos.getCarts()); // Emitir actualización a todos los clientes
+    }
+  });
 });
 
-app.post('/api/carts/:cid/product/:pid', (req, res) => {
-  const cartId = req.params.cid;
-  const productId = req.params.pid;
-  const quantity = req.body.quantity;
-  const success = carritos.addProductToCart(cartId, productId, quantity); 
-  if (success) {
-    res.json({ message: 'Producto agregado al carrito' });
-  } else {
-    res.status(404).json({ error: 'Producto o carrito no encontrado' });
-  }
-});
-
-app.listen(port, () => {
+const port = 8081;
+server.listen(port, () => {
   console.log(`Servidor Express escuchando en el puerto ${port}`);
 });

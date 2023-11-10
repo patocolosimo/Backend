@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Real Time Products</title>
+</head>
+
+<body>
+    <h1>Lista de Productos en Tiempo Real</h1>
+    <ul id="realTimeProductList">
+        {{#each products}}
+            <li>{{this.title}} - {{this.description}} - {{this.price}}</li>
+        {{/each}}
+    </ul>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('updateProducts', (updatedProducts) => {
+            const productList = document.getElementById('realTimeProductList');
+            productList.innerHTML = '';
+            updatedProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.title} - ${product.description} - ${product.price}`;
+                productList.appendChild(li);
+            });
+        });
+    </script>
+</body>
+
+</html>

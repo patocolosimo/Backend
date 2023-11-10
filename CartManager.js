@@ -1,10 +1,13 @@
 const fs = require('fs');
 
 class CartManager {
-  constructor(filePath) {
-    this.path = filePath;
-    this.carts = this.getCarts();
-  }
+    constructor(filePath) {
+      this.path = filePath;
+      this.carts = this.getCarts();
+      if (!Array.isArray(this.carts)) {
+        this.carts = [];
+      }
+    }
 
   createCart() {
     const newCart = {
