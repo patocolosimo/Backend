@@ -2,23 +2,37 @@ const express = require("express");
 const http = require("http");
 const exphbs = require("express-handlebars");
 const socketIo = require("socket.io");
-const ProductManager = require("./ProductManager");
-const CartManager = require("./CartManager");
+const mongoose = require('mongoose');
+const ProductManager = require("./src/dao/ProductManager");
+const CartManager = require("./src/dao/CartManager");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const productos = new ProductManager("products.json");
-const carritos = new CartManager("cart.json");
+const productos = new ProductManager();
+const carritos = new CartManager();
+
+mongoose.connect('mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/ecommerce', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'Error de conexión a MongoDB:'));
+db.once('open', () => {
+  console.log('Conectado a MongoDB');
+});
+
 
 app.engine("handlebars", exphbs.create({}).engine);
 app.set("view engine", "handlebars");
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get("/api/products", (req, res) => {
+app.get("/api/products", async (req, res) => {
   const { limit } = req.query;
-  let allProducts = productos.getProducts();
+  let allProducts = await productos.getProducts();
 
   if (limit) {
     const parsedLimit = parseInt(limit, 10);
@@ -30,10 +44,10 @@ app.get("/api/products", (req, res) => {
   res.json(allProducts);
 });
 
-app.get("/api/products/:pid", (req, res) => {
+app.get("/api/products/:pid", async (req, res) => {
   const productId = parseInt(req.params.pid, 10);
   if (!isNaN(productId)) {
-    const product = productos.getProductById(productId);
+    const product = await productos.getProductById(productId);
     if (product) {
       res.json(product);
     } else {
@@ -44,16 +58,14 @@ app.get("/api/products/:pid", (req, res) => {
   }
 });
 
-// Configurar ruta para la vista tradicional
-app.get("/home", (req, res) => {
-  const allProducts = productos.getProducts();
+app.get("/home", async (req, res) => {
+  const allProducts = await productos.getProducts();
   console.log("Productos:", allProducts);
   res.render("home", { products: allProducts });
 });
 
-// Configurar ruta para la vista en tiempo real con websockets
-app.get("/realtimeproducts", (req, res) => {
-  const allProducts = productos.getProducts();
+app.get("/realtimeproducts", async (req, res) => {
+  const allProducts = await productos.getProducts();
   res.render("realTimeProducts", { products: allProducts });
 });
 
@@ -61,21 +73,19 @@ io.on("connection", (socket) => {
   console.log("Nuevo cliente conectado");
 });
 
-app.post("/api/carts", (req, res) => {
-  const cartId = carritos.createCart();
-  io.emit("updateCarts", carritos.getCarts()); // Emitir actualización a todos los clientes
+app.post("/api/carts", async (req, res) => {
+  const cartId = await carritos.createCart();
+  io.emit("updateCarts", await carritos.getCarts());
   res.json({ cartId });
 });
 
-// Configurar websockets para manejar eventos específicos
 io.on("connection", (socket) => {
   console.log("Nuevo cliente conectado");
 
-  // Manejar el evento de agregar producto al carrito
-  socket.on("addToCart", ({ cartId, productId, quantity }) => {
-    const success = carritos.addProductToCart(cartId, productId, quantity);
+  socket.on("addToCart", async ({ cartId, productId, quantity }) => {
+    const success = await carritos.addProductToCart(cartId, productId, quantity);
     if (success) {
-      io.emit("updateCarts", carritos.getCarts()); // Emitir actualización a todos los clientes
+      io.emit("updateCarts", await carritos.getCarts());
     }
   });
 });
