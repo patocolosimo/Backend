@@ -10,6 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+app.use(express.static('public'));
 const productos = new ProductManager();
 const carritos = new CartManager();
 
@@ -24,59 +25,20 @@ db.once('open', () => {
   console.log('Conectado a MongoDB');
 });
 
-
-app.engine("handlebars", exphbs.create({}).engine);
+app.engine("handlebars", exphbs.create({ /* Configuración de Handlebars aquí */ }).engine);
 app.set("view engine", "handlebars");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get("/api/products", async (req, res) => {
-  const { limit } = req.query;
-  let allProducts = await productos.getProducts();
+app.get('/products', async (req, res) => {
 
-  if (limit) {
-    const parsedLimit = parseInt(limit, 10);
-    if (!isNaN(parsedLimit)) {
-      allProducts = allProducts.slice(0, parsedLimit);
-    }
-  }
-
-  res.json(allProducts);
+  res.send('Implementa la lógica para mostrar todos los productos con paginación');
 });
-
-app.get("/api/products/:pid", async (req, res) => {
-  const productId = parseInt(req.params.pid, 10);
-  if (!isNaN(productId)) {
-    const product = await productos.getProductById(productId);
-    if (product) {
-      res.json(product);
-    } else {
-      res.status(404).json({ error: "Producto no encontrado" });
-    }
-  } else {
-    res.status(400).json({ error: "ID de producto no válido" });
-  }
+app.get('/products/:pid', async (req, res) => {
+  res.send('Implementa la lógica para mostrar detalles de un producto específico');
 });
-
-app.get("/home", async (req, res) => {
-  const allProducts = await productos.getProducts();
-  console.log("Productos:", allProducts);
-  res.render("home", { products: allProducts });
-});
-
-app.get("/realtimeproducts", async (req, res) => {
-  const allProducts = await productos.getProducts();
-  res.render("realTimeProducts", { products: allProducts });
-});
-
-io.on("connection", (socket) => {
-  console.log("Nuevo cliente conectado");
-});
-
-app.post("/api/carts", async (req, res) => {
-  const cartId = await carritos.createCart();
-  io.emit("updateCarts", await carritos.getCarts());
-  res.json({ cartId });
+app.get('/carts/:cid', async (req, res) => {
+  res.send('Implementa la lógica para mostrar un carrito específico');
 });
 
 io.on("connection", (socket) => {
@@ -88,6 +50,12 @@ io.on("connection", (socket) => {
       io.emit("updateCarts", await carritos.getCarts());
     }
   });
+});
+
+app.post("/api/carts", async (req, res) => {
+  const cartId = await carritos.createCart();
+  io.emit("updateCarts", await carritos.getCarts());
+  res.json({ cartId });
 });
 
 app.use((err, req, res, next) => {

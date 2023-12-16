@@ -7,6 +7,8 @@ const productSchema = new mongoose.Schema({
   logo: String,
   code: String,
   stock: Number,
+  category: String,
+  availability: Boolean,
 });
 
 const Product = mongoose.model("Product", productSchema);
@@ -28,12 +30,38 @@ class ProductManager {
 
     return newProduct.id;
   }
-  async getProducts() {
+
+  async getProducts(options) {
+    const { limit = 10, page = 1, sort, query } = options;
+
     try {
-      const products = await Product.find();
-      return products;
+      const searchQuery = query ? { ...query } : {};
+      const sortOption = sort === "desc" ? { price: -1 } : { price: 1 };
+
+      const products = await Product.find(searchQuery)
+        .sort(sortOption)
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const totalProducts = await Product.countDocuments(searchQuery);
+
+      return {
+        status: "success",
+        payload: {
+          docs: products,
+          total: totalProducts,
+        },
+        totalPages: Math.ceil(totalProducts / limit),
+        prevPage: page > 1 ? page - 1 : null,
+        nextPage: page < Math.ceil(totalProducts / limit) ? page + 1 : null,
+        page,
+        hasPrevPage: page > 1,
+        hasNextPage: page < Math.ceil(totalProducts / limit),
+        prevLink: page > 1 ? `/api/products?limit=${limit}&page=${page - 1}&sort=${sort}&query=${JSON.stringify(query)}` : null,
+        nextLink: page < Math.ceil(totalProducts / limit) ? `/api/products?limit=${limit}&page=${page + 1}&sort=${sort}&query=${JSON.stringify(query)}` : null,
+      };
     } catch (error) {
-      return [];
+      return { status: "error", payload: { docs: [], total: 0 } };
     }
   }
 
@@ -48,7 +76,9 @@ class ProductManager {
 
   async updateProduct(id, updatedProduct) {
     try {
-      const result = await Product.findByIdAndUpdate(id, updatedProduct);
+      const result = await Product.findByIdAndUpdate(id, updatedProduct, {
+        new: true,
+      });
       return result !== null;
     } catch (error) {
       return false;
@@ -66,3 +96,4 @@ class ProductManager {
 }
 
 module.exports = ProductManager;
+
