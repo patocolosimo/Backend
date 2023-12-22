@@ -76,6 +76,11 @@ app.get("/home", isLoggedIn, (req, res) => {
   res.render("home");
 });
 
+// Ruta para el formulario de inicio de sesión
+app.get("/login", (req, res) => {
+  res.render("login/login");
+});
+
 // Socket.IO
 io.on("connection", (socket) => {
   console.log("Nuevo cliente conectado");
@@ -131,6 +136,8 @@ app._router.stack.forEach((r) => {
 });
 
 const port = 8081;
-server.listen(port, () => {
+const host = '0.0.0.0';
+
+server.listen(port, host, () => {
   console.log(`Servidor Express escuchando en el puerto ${port}`);
 });
