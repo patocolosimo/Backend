@@ -1,41 +1,48 @@
-const passport = require("passport");
-const LocalStrategy = require("passport-local").Strategy;
-const UserManager = require("./UserManager");
+const bcrypt = require('bcrypt');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const GitHubStrategy = require('passport-github').Strategy;
+const User = require('./models/user');
+const UserManager = require('./UserManager');
 
-passport.use(
-  new LocalStrategy(async (username, password, done) => {
-    try {
-      const user = await UserManager.getUserByUsername(username);
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
-      if (!user || !UserManager.verifyPassword(user, password)) {
-        return done(null, false, {
-          message: "Usuario o contraseña incorrectos",
-        });
-      }
-
-      let role = "usuario";
-      if (username === "adminCoder@coder.com" && password === "adminCod3r123") {
-        role = "admin";
-      }
-
-      return done(null, { id: user.id, username: user.username, role });
-    } catch (error) {
-      return done(error);
-    }
-  })
-);
-
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
+passport.use('local', new LocalStrategy({
+  usernameField: 'email',
+  passwordField: 'password',
+}, async (email, password, done) => {
   try {
-    const user = await UserManager.getUserById(id);
-    done(null, user);
+    const user = await User.findOne({ email });
+    if (!user || !await bcrypt.compare(password, user.password)) {
+      return done(null, false, { message: 'Usuario o contraseña incorrectos' });
+    }
+
+    return done(null, user);
   } catch (error) {
-    done(error);
+    return done(error);
   }
-});
+}));
+
+passport.use('github', new GitHubStrategy({
+  clientID: 'your-github-client-id',
+  clientSecret: 'your-github-client-secret',
+  callbackURL: 'http://localhost:8081/auth/github/callback',
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const email = profile.emails[0].value;
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({ email });
+      await user.save();
+    }
+
+    return done(null, user);
+  } catch (error) {
+    return done(error);
+  }
+}));
 
 module.exports = passport;

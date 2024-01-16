@@ -3,9 +3,13 @@ const Schema = mongoose.Schema;
 const passportLocalMongoose = require("passport-local-mongoose");
 
 const userSchema = new Schema({
-  username: String,
+  first_name: String,
+  last_name: String,
+  email: { type: String, unique: true },
+  age: Number,
   password: String,
-  role: String,
+  cart: { type: Schema.Types.ObjectId, ref: "Carts" },
+  role: { type: String, default: "user" },
 });
 
 userSchema.plugin(passportLocalMongoose);

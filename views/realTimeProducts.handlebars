@@ -1,19 +1,24 @@
-<!-- views/realTimeProducts.handlebars -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/CSS/style.css">
     <title>Real Time Products</title>
 </head>
 
 <body>
     {{#if user}}
-        <h2>Bienvenido, {{user.username}}!</h2>
+        <h1>Bienvenido, {{user.username}}!</h1>
+        <p>Rol: {{role}}</p>
+        <form action="/logout" method="post">
+            <button type="submit">Cerrar sesión</button>
+        </form>
+    {{else}}
+        <h2>Bienvenido a la Lista de Productos</h2>
     {{/if}}
 
-    <h1>Lista de Productos en Tiempo Real</h1>
+    <h1>Lista de Productos</h1>
     <ul id="realTimeProductList">
         {{#each products}}
             <li>{{this.title}} - {{this.description}} - {{this.price}}</li>
