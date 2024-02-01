@@ -21,8 +21,6 @@ const productos = new ProductManager();
 const carritos = new CartManager();
 
 mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/ecommerce", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
 });
 
 const db = mongoose.connection;
