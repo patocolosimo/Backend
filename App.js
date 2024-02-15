@@ -11,6 +11,8 @@ const session = require("express-session");
 const User = require("./src/dao/models/user");
 const ProductManager = require("./src/dao/ProductManager");
 const CartManager = require("./src/dao/CartManager");
+const mockingProducts = require("./mockingProducts");
+const errorHandler = require("./errorHandler");
 
 const app = express();
 const server = http.createServer(app);
@@ -20,8 +22,7 @@ app.use(express.static("public"));
 const productos = new ProductManager();
 const carritos = new CartManager();
 
-mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/ecommerce", {
-});
+mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/ecommerce", {});
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error de conexión a MongoDB:"));
@@ -196,6 +197,12 @@ function isLoggedIn(req, res, next) {
 app.use((err, req, res, next) => {
   console.error("Error interno:", err.stack);
   res.status(500).send("Algo ha salido mal.");
+});
+
+// Endpoint para generar productos simulados
+app.get("/mockingproducts", (req, res) => {
+  const mockProducts = mockingProducts.generateMockProducts();
+  res.json(mockProducts);
 });
 
 const port = 8081;
