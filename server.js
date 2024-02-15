@@ -1,5 +1,6 @@
 const express = require("express");
 const fs = require("fs");
+const logger = require("./logger"); // Importar el módulo de logging
 const app = express();
 const port = 3000;
 
@@ -172,5 +173,5 @@ function saveCart(cart) {
 }
 
 app.listen(port, () => {
-  console.log(`Servidor Express escuchando en el puerto ${port}`);
+  logger.info(`Servidor Express escuchando en el puerto ${port}`); // Usar el logger para información
 });

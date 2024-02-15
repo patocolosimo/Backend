@@ -12,7 +12,7 @@ const User = require("./src/dao/models/user");
 const ProductManager = require("./src/dao/ProductManager");
 const CartManager = require("./src/dao/CartManager");
 const mockingProducts = require("./mockingProducts");
-const errorHandler = require("./errorHandler");
+const logger = require("./logger"); // Importar el módulo de logging
 
 const app = express();
 const server = http.createServer(app);
@@ -25,9 +25,9 @@ const carritos = new CartManager();
 mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/ecommerce", {});
 
 const db = mongoose.connection;
-db.on("error", console.error.bind(console, "Error de conexión a MongoDB:"));
+db.on("error", (err) => logger.error("Error de conexión a MongoDB:", err)); // Usar el logger para errores
 db.once("open", () => {
-  console.log("Conectado a MongoDB");
+  logger.info("Conectado a MongoDB"); // Usar el logger para información
 });
 
 app.engine("handlebars", exphbs.create({ defaultLayout: "main" }).engine);
@@ -51,11 +51,11 @@ passport.use(
     { usernameField: "email", passwordField: "password" },
     async (email, password, done) => {
       try {
-        console.log("Intento de inicio de sesión con email:", email);
+        logger.debug("Intento de inicio de sesión con email:", email); // Usar el logger para debug
         const user = await User.findOne({ email });
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
-          console.log("Error de autenticación local: Usuario o contraseña incorrectos");
+          logger.warn("Error de autenticación local: Usuario o contraseña incorrectos"); // Usar el logger para advertencias
           return done(null, false, { message: "Usuario o contraseña incorrectos" });
         }
 
@@ -64,10 +64,10 @@ passport.use(
           role = "admin";
         }
 
-        console.log("Autenticación local exitosa. Rol del usuario:", role);
+        logger.info("Autenticación local exitosa. Rol del usuario:", role); // Usar el logger para información
         return done(null, { ...user.toObject(), role });
       } catch (error) {
-        console.error("Error en la estrategia local:", error);
+        logger.error("Error en la estrategia local:", error); // Usar el logger para errores
         return done(error);
       }
     }
@@ -91,10 +91,10 @@ passport.use(
           await user.save();
         }
 
-        console.log("Autenticación GitHub exitosa");
+        logger.info("Autenticación GitHub exitosa"); // Usar el logger para información
         return done(null, user);
       } catch (error) {
-        console.error("Error en la estrategia GitHub:", error);
+        logger.error("Error en la estrategia GitHub:", error); // Usar el logger para errores
         return done(error);
       }
     }
@@ -121,7 +121,7 @@ app.get("/products", isLoggedIn, async (req, res) => {
   if (user && user.role === "admin") {
     role = "Admin";
   }
-  console.log("Renderizando la vista de productos con el usuario y el rol:", user, role);
+  logger.debug("Renderizando la vista de productos con el usuario y el rol:", user, role); // Usar el logger para debug
   res.render("realTimeProducts", { user, role });
 });
 
@@ -138,13 +138,13 @@ app.get("/home", isLoggedIn, (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  console.log("Renderizando la vista de inicio de sesión");
+  logger.debug("Renderizando la vista de inicio de sesión"); // Usar el logger para debug
   res.render("login/login", { registerLink: "/register" });
 });
 
 // Ruta para el registro de usuarios
 app.get("/register", (req, res) => {
-  console.log("Renderizando la vista de registro");
+  logger.debug("Renderizando la vista de registro"); // Usar el logger para debug
   res.render("register");
 });
 
@@ -160,7 +160,7 @@ app.get("/auth/github/callback", passport.authenticate("github", {
 }));
 
 io.on("connection", (socket) => {
-  console.log("Nuevo cliente conectado");
+  logger.debug("Nuevo cliente conectado"); // Usar el logger para debug
 
   socket.on("addToCart", async ({ cartId, productId, quantity }) => {
     const success = await carritos.addProductToCart(cartId, productId, quantity);
@@ -190,12 +190,12 @@ function isLoggedIn(req, res, next) {
       return res.redirect("/products"); // Redirige a /products si el usuario no es admin
     }
   }
-  console.log("Usuario no autenticado. Redirigiendo a /login");
+  logger.debug("Usuario no autenticado. Redirigiendo a /login"); // Usar el logger para debug
   res.redirect("/login"); // Redirige a /login si no está autenticado
 }
 
 app.use((err, req, res, next) => {
-  console.error("Error interno:", err.stack);
+  logger.error("Error interno:", err.stack); // Usar el logger para errores
   res.status(500).send("Algo ha salido mal.");
 });
 
@@ -209,5 +209,5 @@ const port = 8081;
 const host = "0.0.0.0";
 
 server.listen(port, host, () => {
-  console.log(`Servidor Express escuchando en el puerto ${port}`);
+  logger.info(`Servidor Express escuchando en el puerto ${port}`); // Usar el logger para información
 });

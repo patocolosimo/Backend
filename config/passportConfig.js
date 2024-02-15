@@ -3,17 +3,18 @@ const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const bcrypt = require("bcrypt");
 const User = require("./src/dao/models/user");
+const logger = require('./logger'); // Importar el módulo de logging
 
 passport.use(
   new LocalStrategy(
     { usernameField: "email", passwordField: "password" },
     async (email, password, done) => {
       try {
-        console.log("Intento de inicio de sesión con email:", email);
+        logger.debug("Intento de inicio de sesión con email:", email);
         const user = await User.findOne({ email });
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
-          console.log("Error de autenticación local: Usuario o contraseña incorrectos");
+          logger.error("Error de autenticación local: Usuario o contraseña incorrectos");
           return done(null, false, { message: "Usuario o contraseña incorrectos" });
         }
 
@@ -22,10 +23,10 @@ passport.use(
           role = "admin";
         }
 
-        console.log("Autenticación local exitosa. Rol del usuario:", role);
+        logger.debug("Autenticación local exitosa. Rol del usuario:", role);
         return done(null, { ...user.toObject(), role });
       } catch (error) {
-        console.error("Error en la estrategia local:", error);
+        logger.error("Error en la estrategia local:", error);
         return done(error);
       }
     }
@@ -49,10 +50,10 @@ passport.use(
           await user.save();
         }
 
-        console.log("Autenticación GitHub exitosa");
+        logger.debug("Autenticación GitHub exitosa");
         return done(null, user);
       } catch (error) {
-        console.error("Error en la estrategia GitHub:", error);
+        logger.error("Error en la estrategia GitHub:", error);
         return done(error);
       }
     }
