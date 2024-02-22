@@ -1,15 +1,15 @@
 const mongoose = require('mongoose');
-const logger = require('./logger'); // Importar el módulo de logging
+const logger = require('./logger');
 
 const connectDB = async () => {
   try {
-    await mongoose.connect('mongodb+srv://<usuario>:<contraseña>@cluster0.xmvg5am.mongodb.net/ecommerce', {
+    await mongoose.connect('mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    logger.info('Conexión a MongoDB exitosa'); // Utilizar el logger para información
+    logger.info('Conexión a MongoDB exitosa');
   } catch (error) {
-    logger.error('Error al conectar a MongoDB:', error.message); // Utilizar el logger para errores
+    logger.error('Error al conectar a MongoDB:', error.message);
     process.exit(1);
   }
 };

@@ -12,7 +12,7 @@ const User = require("./src/dao/models/user");
 const ProductManager = require("./src/dao/ProductManager");
 const CartManager = require("./src/dao/CartManager");
 const mockingProducts = require("./mockingProducts");
-const logger = require("./logger"); // Importar el módulo de logging
+const logger = require("./logger");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,12 +22,12 @@ app.use(express.static("public"));
 const productos = new ProductManager();
 const carritos = new CartManager();
 
-mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/ecommerce", {});
+mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/", {});
 
 const db = mongoose.connection;
-db.on("error", (err) => logger.error("Error de conexión a MongoDB:", err)); // Usar el logger para errores
+db.on("error", (err) => logger.error("Error de conexión a MongoDB:", err));
 db.once("open", () => {
-  logger.info("Conectado a MongoDB"); // Usar el logger para información
+  logger.info("Conectado a MongoDB");
 });
 
 app.engine("handlebars", exphbs.create({ defaultLayout: "main" }).engine);
