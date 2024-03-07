@@ -3,7 +3,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 const bcrypt = require("bcrypt");
 const User = require("./src/dao/models/user");
-const logger = require('./logger'); // Importar el módulo de logging
+const logger = require('./logger');
 
 passport.use(
   new LocalStrategy(
