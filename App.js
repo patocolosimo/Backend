@@ -13,6 +13,8 @@ const ProductManager = require("./src/dao/ProductManager");
 const CartManager = require("./src/dao/CartManager");
 const mockingProducts = require("./mockingProducts");
 const logger = require("./logger");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpecs = require("./config/swaggerConfig");
 
 const app = express();
 const server = http.createServer(app);
@@ -22,7 +24,10 @@ app.use(express.static("public"));
 const productos = new ProductManager();
 const carritos = new CartManager();
 
-mongoose.connect("mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/", {});
+mongoose.connect(
+  "mongodb+srv://patocolosimo:Magunita86@cluster0.xmvg5am.mongodb.net/",
+  {}
+);
 
 const db = mongoose.connection;
 db.on("error", (err) => logger.error("Error de conexión a MongoDB:", err));
@@ -45,18 +50,24 @@ app.use(session(sessionConfig));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configuración de Passport
+// Configuración de Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 passport.use(
   new LocalStrategy(
     { usernameField: "email", passwordField: "password" },
     async (email, password, done) => {
       try {
-        logger.debug("Intento de inicio de sesión con email:", email); // Usar el logger para debug
+        logger.debug("Intento de inicio de sesión con email:", email);
         const user = await User.findOne({ email });
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
-          logger.warn("Error de autenticación local: Usuario o contraseña incorrectos"); // Usar el logger para advertencias
-          return done(null, false, { message: "Usuario o contraseña incorrectos" });
+          logger.warn(
+            "Error de autenticación local: Usuario o contraseña incorrectos"
+          );
+          return done(null, false, {
+            message: "Usuario o contraseña incorrectos",
+          });
         }
 
         let role = user.role || "user";
@@ -64,10 +75,10 @@ passport.use(
           role = "admin";
         }
 
-        logger.info("Autenticación local exitosa. Rol del usuario:", role); // Usar el logger para información
+        logger.info("Autenticación local exitosa. Rol del usuario:", role);
         return done(null, { ...user.toObject(), role });
       } catch (error) {
-        logger.error("Error en la estrategia local:", error); // Usar el logger para errores
+        logger.error("Error en la estrategia local:", error);
         return done(error);
       }
     }
@@ -91,10 +102,10 @@ passport.use(
           await user.save();
         }
 
-        logger.info("Autenticación GitHub exitosa"); // Usar el logger para información
+        logger.info("Autenticación GitHub exitosa");
         return done(null, user);
       } catch (error) {
-        logger.error("Error en la estrategia GitHub:", error); // Usar el logger para errores
+        logger.error("Error en la estrategia GitHub:", error);
         return done(error);
       }
     }
@@ -121,7 +132,11 @@ app.get("/products", isLoggedIn, async (req, res) => {
   if (user && user.role === "admin") {
     role = "Admin";
   }
-  logger.debug("Renderizando la vista de productos con el usuario y el rol:", user, role); // Usar el logger para debug
+  logger.debug(
+    "Renderizando la vista de productos con el usuario y el rol:",
+    user,
+    role
+  );
   res.render("realTimeProducts", { user, role });
 });
 
@@ -138,32 +153,41 @@ app.get("/home", isLoggedIn, (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  logger.debug("Renderizando la vista de inicio de sesión"); // Usar el logger para debug
+  logger.debug("Renderizando la vista de inicio de sesión");
   res.render("login/login", { registerLink: "/register" });
 });
 
-// Ruta para el registro de usuarios
 app.get("/register", (req, res) => {
-  logger.debug("Renderizando la vista de registro"); // Usar el logger para debug
+  logger.debug("Renderizando la vista de registro");
   res.render("register");
 });
 
-app.post("/login", passport.authenticate("local", {
-  successRedirect: "/realtimeproducts",
-  failureRedirect: "/login",
-}));
+app.post(
+  "/login",
+  passport.authenticate("local", {
+    successRedirect: "/realtimeproducts",
+    failureRedirect: "/login",
+  })
+);
 
 app.get("/auth/github", passport.authenticate("github"));
-app.get("/auth/github/callback", passport.authenticate("github", {
-  successRedirect: "/products",
-  failureRedirect: "/login",
-}));
+app.get(
+  "/auth/github/callback",
+  passport.authenticate("github", {
+    successRedirect: "/products",
+    failureRedirect: "/login",
+  })
+);
 
 io.on("connection", (socket) => {
-  logger.debug("Nuevo cliente conectado"); // Usar el logger para debug
+  logger.debug("Nuevo cliente conectado");
 
   socket.on("addToCart", async ({ cartId, productId, quantity }) => {
-    const success = await carritos.addProductToCart(cartId, productId, quantity);
+    const success = await carritos.addProductToCart(
+      cartId,
+      productId,
+      quantity
+    );
     if (success) {
       io.emit("updateCarts", await carritos.getCarts());
     }
@@ -187,19 +211,18 @@ function isLoggedIn(req, res, next) {
     if (user && user.role === "admin") {
       return next();
     } else {
-      return res.redirect("/products"); // Redirige a /products si el usuario no es admin
+      return res.redirect("/products");
     }
   }
-  logger.debug("Usuario no autenticado. Redirigiendo a /login"); // Usar el logger para debug
-  res.redirect("/login"); // Redirige a /login si no está autenticado
+  logger.debug("Usuario no autenticado. Redirigiendo a /login");
+  res.redirect("/login");
 }
 
 app.use((err, req, res, next) => {
-  logger.error("Error interno:", err.stack); // Usar el logger para errores
+  logger.error("Error interno:", err.stack);
   res.status(500).send("Algo ha salido mal.");
 });
 
-// Endpoint para generar productos simulados
 app.get("/mockingproducts", (req, res) => {
   const mockProducts = mockingProducts.generateMockProducts();
   res.json(mockProducts);
@@ -209,5 +232,5 @@ const port = 8081;
 const host = "0.0.0.0";
 
 server.listen(port, host, () => {
-  logger.info(`Servidor Express escuchando en el puerto ${port}`); // Usar el logger para información
+  logger.info(`Servidor Express escuchando en el puerto ${port}`);
 });
